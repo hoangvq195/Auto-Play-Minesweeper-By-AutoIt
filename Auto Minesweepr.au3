@@ -14,7 +14,7 @@ Global $mine
 #include <WindowsConstants.au3>
 
 #Region ### START Koda GUI section ### Form=D:\Dropbox\Autoit AutoGames Tutorial\Minesweeper\Form1.kxf
-$Form1 = GUICreate("Auto Minesweeper", 358, 181, 100, 700)
+$Form1 = GUICreate("Auto Minesweeper", 358, 181, 100, 600)
 GUISetFont(12, 400, 0, "MS Sans Serif")
 $Label1 = GUICtrlCreateLabel("Kích Thước", 35, 36, 81, 22)
 $Input1 = GUICtrlCreateInput("16", 129, 35, 67, 26, BitOR($GUI_SS_DEFAULT_INPUT, $ES_CENTER))
