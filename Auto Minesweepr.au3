@@ -48,7 +48,7 @@ EndFunc   ;==>_CheckGuiEvent
 Func _StartAuto()
 	$hwnd = WinGetHandle('Minesweeper')
 	FFSetWnd($hwnd)
-;~ 	FFSaveBMP('game') ; chup lai hinh anh game va luu ra file
+;~ 	Exit FFSaveBMP('game') ; chup lai hinh anh game va luu ra file
 
 	$width = GUICtrlRead($Input1)
 	$hight = GUICtrlRead($Input2)
@@ -62,10 +62,56 @@ Func _StartAuto()
 		$mine[$i][0] = 0
 		$mine[$i][$width + 1] = 0
 	Next
+	For $i = 1 To $hight
+		For $j = 1 To $width
+			$mine[$i][$j] = -1
+		Next
+	Next
 
+	_RandomOpen()
 	_GetMineArray()
-	_ArrayDisplay($mine)
+	_ShowMine()
 EndFunc   ;==>_StartAuto
+
+Func _RandomOpen()
+	ControlSend($hwnd, '', '', '{F2}')
+	Local $count = 0
+	Do
+		_CellClick(Random(1, $width, 1), Random(1, $hight, 1))
+		$count += 1
+		Local $totalNotOpenCell = _GetGameColor(0xFFFFFF, 54)
+		Local $checkBomb = _GetGameColor(0x000000)
+		If $totalNotOpenCell < $width * $hight - $count Then
+			If $checkBomb = 0 Then
+				ExitLoop
+			Else
+				$count = 0
+				ControlSend($hwnd, '', '', '{F2}')
+			EndIf
+		EndIf
+	Until 0
+EndFunc   ;==>_RandomOpen
+
+Func _GetGameColor($color, $unit = 1)
+	Local $count = FFColorCount($color, 0, True, 12, 55, 491, 310)
+	Return Round($count / $unit)
+EndFunc   ;==>_GetGameColor
+
+Func _ShowMine()
+	For $i = 1 To $hight
+		For $j = 1 To $width
+			Switch $mine[$i][$j]
+				Case -1
+					ConsoleWrite('. ')
+				Case 0
+					ConsoleWrite('  ')
+				Case Else
+					ConsoleWrite($mine[$i][$j] & ' ')
+			EndSwitch
+		Next
+		ConsoleWrite(@CRLF)
+	Next
+EndFunc   ;==>_ShowMine
 
 Func _GetMineArray()
 	For $i = 1 To $width
@@ -92,6 +138,7 @@ Func _GetCellValue($x, $y)
 		Case 140
 			Return 4
 	EndSwitch
+	Return -1
 EndFunc   ;==>_GetCellValue
 
 Func _CellClick($x, $y, $mouse = 'left')
@@ -101,3 +148,4 @@ EndFunc   ;==>_CellClick
 While 1
 	_CheckGuiEvent()
 WEnd
+
