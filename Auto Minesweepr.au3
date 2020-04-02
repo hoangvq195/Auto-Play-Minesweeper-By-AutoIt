@@ -6,6 +6,7 @@ Opt('MouseClickDownDelay', 0)
 
 Global $hwnd, $width, $hight
 Global $mine, $unOpenCell, $numberCell
+Global $empty = 0, $none = -1, $flag = -2
 
 #include <ButtonConstants.au3>
 #include <GUIConstantsEx.au3>
@@ -58,11 +59,46 @@ Func _StartAuto()
 	Next
 
 	_RandomOpen()
-	_GetMineArray()
-	ConsoleWrite(UBound($unOpenCell) & @CRLF)
-	ConsoleWrite(UBound($numberCell) & @CRLF)
-	_ShowMine()
+	Do
+		_GetMineArray()
+		_CanculateLev1()
+	Until 0
 EndFunc   ;==>_StartAuto
+
+Func _CanculateLev1()
+	Local $total
+	$total = UBound($numberCell)
+	For $id = $total - 1 To 0 Step -1
+		Local $i = $numberCell[$id][0]
+		Local $j = $numberCell[$id][1]
+		Local $noneCount = _CountItemAround($none, $i, $j)
+		If $noneCount = 0 Then
+			_ArrayDelete($numberCell, $id)
+		Else
+			Local $flagCount = _CountItemAround($flag, $i, $j)
+			If $flagCount + $noneCount = $mine[$i][$j] Then
+				_FlagAround($i, $j)
+				_ArrayDelete($numberCell, $id)
+			EndIf
+		EndIf
+	Next
+
+	$total = UBound($numberCell)
+	For $id = $total - 1 To 0 Step -1
+		Local $i = $numberCell[$id][0]
+		Local $j = $numberCell[$id][1]
+		Local $noneCount = _CountItemAround($none, $i, $j)
+		If $noneCount = 0 Then
+			_ArrayDelete($numberCell, $id)
+		Else
+			Local $flagCount = _CountItemAround($flag, $i, $j)
+			If $flagCount = $mine[$i][$j] Then
+				_CellClick($j, $i, 'middle')
+				_ArrayDelete($numberCell, $id)
+			EndIf
+		EndIf
+	Next
+EndFunc   ;==>_CanculateLev1
 
 Func _RandomOpen()
 	ControlSend($hwnd, '', '', '{F2}')
@@ -109,9 +145,13 @@ Func _GetMineArray()
 	For $n = $arraySize - 1 To 0 Step -1
 		$i = $unOpenCell[$n][0]
 		$j = $unOpenCell[$n][1]
-		$mine[$i][$j] = _GetCellValue($j, $i)
-		If $mine[$i][$j] <> -1 Then _ArrayDelete($unOpenCell, $n)
-		If $mine[$i][$j] <> -1 And $mine[$i][$j] <> 0 Then _ArrayAdd($numberCell, $i & '|' & $j)
+		If $mine[$i][$j] = $flag Then
+			_ArrayDelete($unOpenCell, $n)
+		Else
+			$mine[$i][$j] = _GetCellValue($j, $i)
+			If $mine[$i][$j] <> -1 Then _ArrayDelete($unOpenCell, $n)
+			If $mine[$i][$j] <> -1 And $mine[$i][$j] <> 0 Then _ArrayAdd($numberCell, $i & '|' & $j)
+		EndIf
 	Next
 EndFunc   ;==>_GetMineArray
 
@@ -167,9 +207,33 @@ Func _CheckGameSize()
 	GUICtrlSetData($Label3, 'Game Size:' & @TAB & $width & ' x ' & $hight)
 EndFunc   ;==>_CheckGameSize
 
+Func _CountItemAround($item, $x, $y)
+	Local $count = 0
+	For $i = $x - 1 To $x + 1
+		For $j = $y - 1 To $y + 1
+			If $i = $x And $j = $y Then ContinueLoop
+			If $mine[$i][$j] = $item Then $count += 1
+		Next
+	Next
+	Return $count
+EndFunc   ;==>_CountItemAround
+
+Func _FlagAround($x, $y)
+	For $i = $x - 1 To $x + 1
+		For $j = $y - 1 To $y + 1
+			If $i = $x And $j = $y Then ContinueLoop
+			If $mine[$i][$j] = $none Then
+				_CellClick($j, $i, 'right')
+				$mine[$i][$j] = $flag
+			EndIf
+		Next
+	Next
+EndFunc   ;==>_FlagAround
+
 While 1
 	_CheckGuiEvent()
 	_CheckGameState()
 	_CheckGameSize()
 WEnd
+
 
