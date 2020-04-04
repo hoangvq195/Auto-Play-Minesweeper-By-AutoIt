@@ -229,7 +229,7 @@ Func _GetCellValue($x, $y)
 			Return 3
 		Case 140
 			Return 4
-		Case 126
+			Case 126
 			Return 5
 		Case 124
 			Return 6
