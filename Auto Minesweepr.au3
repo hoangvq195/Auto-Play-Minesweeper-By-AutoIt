@@ -1,12 +1,14 @@
 ﻿#include <Array.au3>
 #include <FastFind1.au3>
+#include <Math.au3>
 
 Opt('MouseClickDelay', 0)
 Opt('MouseClickDownDelay', 0)
 
 Global $hwnd, $width, $hight
 Global $mine, $unOpenCell, $numberCell
-Global $empty = 0, $none = -1, $flag = -2
+Const $empty = 0, $none = -1, $flag = -2, $mask = -3
+Global $isChange
 
 #include <ButtonConstants.au3>
 #include <GUIConstantsEx.au3>
@@ -60,10 +62,66 @@ Func _StartAuto()
 
 	_RandomOpen()
 	Do
+		$isChange = False
 		_GetMineArray()
 		_CanculateLev1()
-	Until 0
+		If Not $isChange Then _CanculateLev2()
+	Until Not $isChange
+
 EndFunc   ;==>_StartAuto
+
+Func _CanculateLev2()
+	Local $total = UBound($numberCell)
+	For $id = $total - 1 To 0 Step -1
+		$i1 = $numberCell[$id][0]
+		$j1 = $numberCell[$id][1]
+		Local $none1Count = _CountItemAround($none, $i1, $j1)
+		Local $flag1Count = _CountItemAround($flag, $i1, $j1)
+		Local $bomb1Count = $mine[$i1][$j1] - $flag1Count
+		_MarkAround($i1, $j1)
+
+		For $i = $i1 - 2 To $i1 + 2
+			For $j = $j1 - 2 To $j1 + 2
+				If $i < 1 Or $i > $hight Then ContinueLoop
+				If $j < 1 Or $j > $width Then ContinueLoop
+
+				If $i = $i1 And $j = $j1 Then ContinueLoop
+				If $mine[$i][$j] <= 0 Then ContinueLoop
+				Local $noneCount = _CountItemAround($none, $i, $j)
+				If $noneCount = 0 Then ContinueLoop
+				Local $flagCount = _CountItemAround($flag, $i, $j)
+
+				Local $maskCount = _CountItemAround($mask, $i, $j)
+				If $maskCount <= 1 Then ContinueLoop
+
+				Local $maxBomb = _Min($bomb1Count, $maskCount)
+				Local $minBomb = _Max($bomb1Count - ($none1Count - $maskCount), 0)
+
+				If $minBomb = $mine[$i][$j] - $flagCount Then
+					_OpenAroud($i, $j)
+				EndIf
+
+				If $maxBomb + $noneCount = $mine[$i][$j] - $flagCount Then
+					_FlagAround($i, $j)
+				EndIf
+			Next
+		Next
+		_MarkAround($i1, $j1, False)
+	Next
+EndFunc   ;==>_CanculateLev2
+
+Func _MarkAround($x, $y, $isMask = True)
+	For $i = $x - 1 To $x + 1
+		For $j = $y - 1 To $y + 1
+			If $i = $x And $j = $y Then ContinueLoop
+			If $isMask Then
+				If $mine[$i][$j] = $none Then $mine[$i][$j] = $mask
+			Else
+				If $mine[$i][$j] = $mask Then $mine[$i][$j] = $none
+			EndIf
+		Next
+	Next
+EndFunc   ;==>_MarkAround
 
 Func _CanculateLev1()
 	Local $total
@@ -177,6 +235,7 @@ EndFunc   ;==>_GetCellValue
 
 Func _CellClick($x, $y, $mouse = 'left')
 	ControlClick($hwnd, '', '', $mouse, 1, 20 + 16 * ($x - 1), 68 + 16 * ($y - 1))
+	$isChange = True
 EndFunc   ;==>_CellClick
 
 Func _CheckGameState()
@@ -229,6 +288,15 @@ Func _FlagAround($x, $y)
 		Next
 	Next
 EndFunc   ;==>_FlagAround
+
+Func _OpenAroud($x, $y)
+	For $i = $x - 1 To $x + 1
+		For $j = $y - 1 To $y + 1
+			If $i = $x And $j = $y Then ContinueLoop
+			If $mine[$i][$j] = $none Then _CellClick($j, $i)
+		Next
+	Next
+EndFunc   ;==>_OpenAroud
 
 While 1
 	_CheckGuiEvent()
