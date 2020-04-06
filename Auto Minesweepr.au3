@@ -66,9 +66,19 @@ Func _StartAuto()
 		_GetMineArray()
 		_CanculateLev1()
 		If Not $isChange Then _CanculateLev2()
-	Until Not $isChange
-
+		If Not $isChange Then _CanculateLev3()
+		Local $state = FFColorCount(0x000000, 0, True, 240, 16, 264, 40)
+		If $state = 63 Then Return _StartAuto()
+		If $state = 86 Then Return MsgBox(0, '', 'You win!')
+	Until 0
 EndFunc   ;==>_StartAuto
+
+Func _CanculateLev3()
+	Local $count = UBound($unOpenCell)
+	If $count = 0 Then Return
+	Local $id = Random($count - 1, 0, 1)
+	_CellClick($unOpenCell[$id][1], $unOpenCell[$id][0])
+EndFunc   ;==>_CanculateLev3
 
 Func _CanculateLev2()
 	Local $total = UBound($numberCell)
@@ -166,14 +176,10 @@ Func _RandomOpen()
 		$count += 1
 		Local $totalNotOpenCell = _GetGameColor(0xFFFFFF, 54)
 		Local $checkBomb = _GetGameColor(0x000000)
-		If $totalNotOpenCell < $width * $hight - $count Then
-			If $checkBomb = 0 Then
-				ExitLoop
-			Else
-				$count = 0
-				ControlSend($hwnd, '', '', '{F2}')
-			EndIf
-		EndIf
+
+		If $checkBomb > 0 Then ControlSend($hwnd, '', '', '{F2}')
+
+		If $totalNotOpenCell < 0.85 * $width * $hight Then ExitLoop
 	Until 0
 EndFunc   ;==>_RandomOpen
 
@@ -211,11 +217,12 @@ Func _GetMineArray()
 			If $mine[$i][$j] <> -1 And $mine[$i][$j] <> 0 Then _ArrayAdd($numberCell, $i & '|' & $j)
 		EndIf
 	Next
+;~ 	Exit _ArrayDisplay($mine)
 EndFunc   ;==>_GetMineArray
 
 Func _GetCellValue($x, $y)
 	Local $count = FFColorCount(0xC0C0C0, 0, True, 13 + 16 * ($x - 1), 56 + 16 * ($y - 1), 26 + 16 * ($x - 1), 69 + 16 * ($y - 1))
-
+;~ 	Return $count; tam thoi
 	Switch $count
 		Case 146
 			Return -1
@@ -233,6 +240,8 @@ Func _GetCellValue($x, $y)
 			Return 5
 		Case 124
 			Return 6
+		Case 152
+			Return 7
 	EndSwitch
 	Return -1
 EndFunc   ;==>_GetCellValue
